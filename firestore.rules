@@ -1,0 +1,109 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+    
+    function uidUnchanged() {
+      return !('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid;
+    }
+    
+    function uidNotModified() {
+      return !('userId' in request.resource.data) || request.resource.data.userId == resource.data.userId;
+    }
+    
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+    
+    function isPositiveOrZero(field) {
+      return request.resource.data[field] is number && request.resource.data[field] >= 0;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidClient() {
+      let data = request.resource.data;
+      return hasRequiredFields(['userId', 'name', 'industry', 'contact', 'status', 'logo']) &&
+             validStringLength('userId', 1, 100) &&
+             validStringLength('name', 1, 100) &&
+             validStringLength('industry', 1, 100) &&
+             validStringLength('contact', 1, 100) &&
+             validStringLength('logo', 1, 10) &&
+             data.status in ['Ativo', 'Inativo'];
+    }
+
+    function isValidProject() {
+      let data = request.resource.data;
+      return hasRequiredFields(['userId', 'name', 'client', 'status', 'progress', 'dueDate']) &&
+             validStringLength('userId', 1, 100) &&
+             validStringLength('name', 1, 100) &&
+             validStringLength('client', 1, 100) &&
+             validStringLength('dueDate', 1, 50) &&
+             isPositiveOrZero('progress') && data.progress <= 100 &&
+             data.status in ['Em Andamento', 'Concluído', 'Pausado'];
+    }
+
+    function isValidTask() {
+      let data = request.resource.data;
+      return hasRequiredFields(['userId', 'title', 'priority', 'date', 'comments', 'attachments', 'assignee', 'project', 'status']) &&
+             validStringLength('userId', 1, 100) &&
+             validStringLength('title', 1, 200) &&
+             validStringLength('date', 1, 50) &&
+             validStringLength('assignee', 1, 100) &&
+             validStringLength('project', 1, 100) &&
+             isPositiveOrZero('comments') &&
+             isPositiveOrZero('attachments') &&
+             data.priority in ['Urgente', 'Alta', 'Média', 'Baixa'] &&
+             data.status in ['todo', 'inProgress', 'done'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /clients/{clientId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidClient() && isOwner(request.resource.data.userId);
+      allow update: if isDocOwner() && isValidClient() && uidNotModified();
+      allow delete: if isDocOwner();
+    }
+
+    match /projects/{projectId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidProject() && isOwner(request.resource.data.userId);
+      allow update: if isDocOwner() && isValidProject() && uidNotModified();
+      allow delete: if isDocOwner();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidTask() && isOwner(request.resource.data.userId);
+      allow update: if isDocOwner() && isValidTask() && uidNotModified();
+      allow delete: if isDocOwner();
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "Client": {
+      "title": "Client",
+      "description": "A client of the agency.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who owns this client." },
+        "name": { "type": "string", "description": "The name of the client." },
+        "industry": { "type": "string", "description": "The industry of the client." },
+        "contact": { "type": "string", "description": "The contact person for the client." },
+        "status": { "type": "string", "enum": ["Ativo", "Inativo"], "description": "The status of the client." },
+        "logo": { "type": "string", "description": "A single letter or short string for the logo." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["userId", "name", "industry", "contact", "status", "logo"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "A project for a client.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who owns this project." },
+        "name": { "type": "string", "description": "The name of the project." },
+        "client": { "type": "string", "description": "The name or ID of the client." },
+        "status": { "type": "string", "enum": ["Em Andamento", "Concluído", "Pausado"], "description": "The status of the project." },
+        "progress": { "type": "number", "description": "The progress percentage of the project." },
+        "dueDate": { "type": "string", "description": "The due date of the project." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["userId", "name", "client", "status", "progress", "dueDate"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A task within a project.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who owns this task." },
+        "title": { "type": "string", "description": "The title of the task." },
+        "priority": { "type": "string", "enum": ["Urgente", "Alta", "Média", "Baixa"], "description": "The priority of the task." },
+        "date": { "type": "string", "description": "The due date or timeframe of the task." },
+        "comments": { "type": "number", "description": "Number of comments." },
+        "attachments": { "type": "number", "description": "Number of attachments." },
+        "assignee": { "type": "string", "description": "The person assigned to the task." },
+        "project": { "type": "string", "description": "The project this task belongs to." },
+        "status": { "type": "string", "enum": ["todo", "inProgress", "done"], "description": "The status of the task." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["userId", "title", "priority", "date", "comments", "attachments", "assignee", "project", "status"]
+    }
+  },
+  "firestore": {
+    "/clients/{clientId}": {
+      "schema": { "$ref": "#/entities/Client" },
+      "description": "Stores client information."
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "Stores project information."
+    },
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Stores task information."
+    }
+  }
+}
